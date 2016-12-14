@@ -82,4 +82,13 @@ function arrowClick() {
 }
 */
 
-var s = Snap(window.innerWidth, window.innerHeight);
+var x = 0;
+
+function setup() {
+    createCanvas(window.innerWidth, window.innerHeight);
+}
+
+function draw() {
+    ellipse(x, height/2, 20, 20);
+    x = x + 1;
+}
