@@ -1,94 +1,89 @@
-/*
- Sets up the canvas for the game to be played on
- */
-/*var lineStart = true;
-var s_button = false;
-var a_button = false;
-var graph = new Machine();
-
-window.onload = function() {
-    var canvas = document.getElementById('canvas');
-    var context = canvas.getContext('2d');
-    context.canvas.width = window.innerWidth;
-    context.canvas.height = window.innerHeight;
-};
-
-function leftClick() {
-  var x = event.clientX;
-  var y = event.clientY;
-  var canvas = document.getElementById('canvas');
-  var context = canvas.getContext('2d');
-  if (s_button) newState(x, y, canvas, context);
-  else newArrow(x, y, canvas, context);
+function Graph() {
+    this.states = [];
+    this.arrows = [];
 }
 
-function newState(x, y, canvas, context) {
-  var curr = new State(x, y, 70, "State".concat((graph.numstates).toString));
-  graph.states.push(curr);
-  context.beginPath();
-  context.beginPath();
-  context.arc(curr.x, curr.y, curr.radius, 0, 2 * Math.PI);
-  context.stroke();
-  context.closePath();
+function State(ex, why, rad) {
+    this.x = ex;
+    this.y = why;
+    this.radius = rad;
 }
 
-function newArrow(x, y, canvas, context) {
-  if (lineStart) {
-    graph.arrows.push(new Arrow(event.clientX, event.clientY));
-    graph.numarrows += 1;
-    lineStart = false;
-  } else {
-    var temp = graph.arrows[graph.numarrows - 1];
-    temp.endx = event.clientX;
-    temp.endy = event.clientY;
-    context.beginPath();
-    context.moveTo(temp.startx, temp.starty);
-    context.lineTo(temp.endx, temp.endy);
-    context.stroke();
-    lineStart = true;
-  }
+function Arrow(state1, state2, x1, x2, y1, y2) {
+    this.startState = state1;
+    this.endState = state2;
+
+    this.startx = x1;
+    this.endx = x2;
+    this.starty = y1;
+    this.endy = y2;
 }
 
-function Machine() {
-  this.states = [];
-  this.numstates = 0;
-  this.arrows = [];
-  this.numarrows = 0;
-}
-
-function Arrow(x, y) {
-  this.startx = x;
-  this.starty = y;
-  this.endx = 0;
-  this.endy = 0;
-}
-
-function State(xcoord, ycoord, rad, name) {
-  this.x = xcoord;
-  this.y = ycoord;
-  this.radius = rad;
-  this.name = "";
-  graph.states.numstates += 1;
-}
-
-function stateClick() {
-  s_button = true;
-  a_button = false;
-}
-
-function arrowClick() {
-  a_button = true;
-  s_button = false;
-}
-*/
-
-var x = 0;
+const CIRCLE_SIZE = 120;
+var graph = new Graph();
+var start;
+var endArrow = false;
+var circles = false;
+var arrows = false;
 
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
+    smooth(8);
 }
 
 function draw() {
-    ellipse(x, height/2, 20, 20);
-    x = x + 1;
+    clear();
+    strokeWeight(3);
+
+    for (var i = 0; i < graph.states.length; ++i) {
+        var state = graph.states[i];
+        //console.log(state.x + " " + state.y + " " + state.radius);
+        ellipse(state.x, state.y, state.radius);
+    }
+
+
+    for (arrow in graph.arrows) {
+        line(startx, starty, endx, endy);
+    }
+}
+
+function mousePressed() {
+    var x = mouseX;
+    var y = mouseY;
+
+    if (! endArrow) {
+
+        var temp = new State(x, y, CIRCLE_SIZE);
+        console.log("hey "+ temp.x + " " + temp.y);
+        //graph.states.push({x: mouseX, y: mouseY, radius: CIRCLE_SIZE});
+        //graph.states.push(new State(x, y, CIRCLE_SIZE));
+        graph.states.push(temp);
+    }
+}
+
+function calculateArrowHead() {
+
+}
+
+function drawArrow() {
+    //if we've already clicked, we draw using our start point
+    //if not, we save the mouse coordinates
+    if (endArrow) {
+        draw();
+        endArrow = false;
+    } else {
+        endArrow = true;
+        start = new ArrowStart(undefined, undefined, mouseX,
+            undefined, mouseY);
+    }
+}
+
+function drawCircles() {
+    circles = true;
+    arrows = false;
+}
+
+function drawArrows() {
+    arrows = true;
+    circles = false;
 }
