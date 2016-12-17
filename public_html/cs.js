@@ -22,10 +22,24 @@ function Arrow(coord1, coord2) {
     this.startState = undefined;
     this.endState = undefined;
 
+    this.head = undefined;
+
     this.startCoord = new Coordinate(coord1.x, coord1.y);
     if (coord2 != undefined) this.endCoord = new Coordinate(coord2.x, coord2.y);
     else this.endCoord = new Coordinate();
+
     this.complete = false;
+}
+
+function ArrowHead(coord1, coord2) {
+    //delta y over delta x to calculate slope
+    var slope = (coord1.y - coord2.y) / (coord2.x  - coord1.x);
+
+    this.a = new Coordinate(coord2.x - TRIANGLE_BASE_X_CHANGE, coord2.y + TRIANGLE_BASE_LENGTH);
+    this.b = new Coordinate(coord2.x + TRIANGLE_BASE_X_CHANGE, coord2.y - TRIANGLE_BASE_LENGTH);
+    //set the head of the triangles 5 pixels further, accounting for slope
+    //
+    this.c = new Coordinate(coord2.x + TRIANGLE_CENTRAL_LENGTH, Math.round(coord2.y + (5 * slope)));
 }
 
 function Coordinate(ex, why) {
@@ -34,7 +48,13 @@ function Coordinate(ex, why) {
 }
 
 //CIRCLE_SIZE is a placeholder, the size should be customizable
+//TBL is how far one point of the triangle base is from coord2
 const CIRCLE_SIZE = 120;
+const TRIANGLE_BASE_LENGTH = 3; //(5 * (Math.sin(Math.PI / 6))) / (Math.sin(Math.PI / 3))
+                                //but rounded up because pixels
+const TRIANGLE_BASE_X_CHANGE = 2;   //(3 * (Math.sin(Math.PI / 6))) / (Math.sin(Math.PI / 3))
+                                    //but rounded up because pixels
+const TRIANGLE_CENTRAL_LENGTH = 5;
 
 //initialize our starting variables
 var graph = new Graph();
@@ -67,10 +87,11 @@ function draw() {
             var arrow = graph.arrows[i];
             if (arrow.complete) {
                 line(arrow.startCoord.x, arrow.startCoord.y, arrow.endCoord.x, arrow.endCoord.y);
+                var ah = arrow.head;
+                triangle(ah.a.x, ah.a.y, ah.c.x, ah.c.y, ah.b.x, ah.b.y);
             }
         }
     }
-
 }
 
 //p5 calls this, we don't need to
@@ -95,22 +116,21 @@ function mousePressed() {
             temp.endCoord.x = x;
             temp.endCoord.y = y;
             temp.complete = true;
+            temp.head = new ArrowHead(temp.startCoord, temp.endCoord);
             endArrow = false;
         }
     }
 
 }
 
-function calculateArrowHead() {
-
-}
-
+//on click of the state button
 function drawCircles() {
     circles = true;
     arrows = false;
     start = true;
 }
 
+//on click of the arrow button
 function drawArrows() {
     arrows = true;
     circles = false;
