@@ -13,9 +13,10 @@ function Graph() {
     this.arrows = [];
 }
 
-function State(coord, rad) {
+function State(coord, rad, text) {
     this.location = new Coordinate(coord.x, coord.y);
     this.radius = rad;
+    this.name = (text == undefined ? new Label("") : new Label(text));
 }
 
 function Arrow(coord1, coord2) {
@@ -32,8 +33,17 @@ function Arrow(coord1, coord2) {
 }
 
 function ArrowHead(coord1, coord2) {
+/*
+    INSTEAD OF DOING SINES AND JUNK:
+
+    start with the endpoint of the arrow (x + 5)
+    go backwards, match the point of x + 5 to the y +/y - 3
+    connect the a and b together since you know their coordinates
+
+     */
+
     //delta y over delta x to calculate slope
-    var slope = (coord1.y - coord2.y) / (coord2.x  - coord1.x);
+    var slope = (coord1.y - coord2.y) / (coord1.x  - coord2.x);
 
     this.a = new Coordinate(coord2.x - TRIANGLE_BASE_X_CHANGE, coord2.y + TRIANGLE_BASE_LENGTH);
     this.b = new Coordinate(coord2.x + TRIANGLE_BASE_X_CHANGE, coord2.y - TRIANGLE_BASE_LENGTH);
@@ -47,9 +57,15 @@ function Coordinate(ex, why) {
     this.y = why;
 }
 
+function Label(text) {
+    this.fontSize = TEXT_SIZE;
+    this.text = text;
+}
+
 //CIRCLE_SIZE is a placeholder, the size should be customizable
 //TBL is how far one point of the triangle base is from coord2
 const CIRCLE_SIZE = 120;
+const TEXT_SIZE = 14;
 const TRIANGLE_BASE_LENGTH = 3; //(5 * (Math.sin(Math.PI / 6))) / (Math.sin(Math.PI / 3))
                                 //but rounded up because pixels
 const TRIANGLE_BASE_X_CHANGE = 2;   //(3 * (Math.sin(Math.PI / 6))) / (Math.sin(Math.PI / 3))
@@ -62,10 +78,12 @@ var endArrow = false;
 var circles = false;
 var arrows = false;
 var start = false;
+var moveMode = false;
 
 //make a canvas, do anti-aliasing
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
+    var mouseIsPressed = false;
     smooth(8);
 }
 
@@ -94,19 +112,33 @@ function draw() {
     }
 }
 
+if (mouse) {
+    if (mouseButton == LEFT) {
+        leftClick();
+    } else if (mouseButton == RIGHT) {
+        rightClick();
+    }
+}
+
 //p5 calls this, we don't need to
 //get the mouse coordinates
 //if we've already clicked a button, we check the conditions of our buttons
 //make new state/arrow or finish an arrow as applicable
-function mousePressed() {
+function leftClick() {
     var x = mouseX;
     var y = mouseY;
     var temp;
 
     if (start) {
         if (!endArrow && circles) {
-            temp = new State(new Coordinate(x, y), CIRCLE_SIZE);
-            graph.states.push(temp);
+            var state = whichState(new Coordinate(mouseX, mouseY));
+            if (state == -1) {
+                temp = new State(new Coordinate(x, y), CIRCLE_SIZE);
+                graph.states.push(temp);
+            } else {
+                name(graph.states[state]);
+            }
+
         } else if (!endArrow && !circles) {
             temp = new Arrow(new Coordinate(x, y));
             graph.arrows.push(temp);
@@ -119,7 +151,38 @@ function mousePressed() {
             temp.head = new ArrowHead(temp.startCoord, temp.endCoord);
             endArrow = false;
         }
+    } else if (moveMode) {
+
     }
+
+}
+
+function rightClick() {
+
+}
+
+function whichState(coord) {
+    ex = coord.x;
+    why = coord.y;
+    for (var i = 0; i < graph.states.length; i++) {
+        var state = graph.states[i];
+        var r = state.radius;
+        //distance between two points
+        if (r > (Math.sqrt(Math.pow(ex - state.location.x, 2) +
+                Math.pow(why - state.location.y, 2)))) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+function slope(coord1, coord2) {
+    return (coord1.y - coord2.y) / (coord2.x  - coord1.x);
+}
+
+function name(coord) {
+    var location = this.location;
 
 }
 
@@ -136,3 +199,5 @@ function drawArrows() {
     circles = false;
     start = true;
 }
+
+var debug = true;
