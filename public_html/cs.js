@@ -29,14 +29,20 @@ function Arrow(coord, text) {
     this.startCoord = new Coordinate(coord.x, coord.y);
     this.currentCoord = new Coordinate();
     this.type = "arrow";
-    this.head = new ArrowHead(this.startCoord, this.currentCoord);
+    this.head = undefined;
+    this.slope = undefined;
     this.complete = false;
 
     graph.arrows.push(this);
 }
 
-function ArrowHead(coord1, coord2) {
+function ArrowHead(coord1, coord2, arrow) {
     this.type = "arrowhead";
+
+    var slope = arrow.slope;
+    this.a = new Coordinate(arrow.currentCoord.x - 5, arrow.currentCoord.y + 5 * (2 * slope));
+    this.b = arrow.currentCoord;
+    this.c = new Coordinate(arrow.currentCoord.x - 5, arrow.currentCoord.y - 5 * (2 * slope));
 }
 
 function Coordinate(ex, why) {
@@ -93,8 +99,12 @@ function draw() {
                 line(arrow.startCoord.x, arrow.startCoord.y,
                     mouseX, mouseY);
             } else {
-                line(arrow.startCoord.x, arrow.startCoord.y,
-                    arrow.currentCoord.x, arrow.currentCoord.y);
+                if (arrow.startCoord == arrow.currentCoord) {
+                    //draw arrow back to itself
+                } else {
+                    line(arrow.startCoord.x, arrow.startCoord.y,
+                        arrow.currentCoord.x, arrow.currentCoord.y);
+                }
             }
         }
     }
@@ -131,6 +141,10 @@ function mousePressed() {
             pointerToLastArrow.currentCoord.x = x;
             pointerToLastArrow.currentCoord.y = y;
             pointerToLastArrow.complete = true;
+            pointerToLastArrow.slope = slope(pointerToLastArrow.startCoord,
+                pointerToLastArrow.currentCoord);
+            pointerToLastArrow.head = new ArrowHead(pointerToLastArrow.startCoord,
+                pointerToLastArrow.currentCoord, pointerToLastArrow);
         }
     } else if (moveMode) {
         //TODO
@@ -141,8 +155,8 @@ function mousePressed() {
 //returns which state was clicked on
 //returns a -1 if there was no state
 function whichState(coord) {
-    ex = coord.x;
-    why = coord.y;
+    var ex = coord.x;
+    var why = coord.y;
     for (var i = 0; i < graph.states.length; i++) {
         var state = graph.states[i];
         var r = state.radius;
@@ -155,6 +169,10 @@ function whichState(coord) {
     }
 
     return -1;
+}
+
+function slope(coord1, coord2) {
+    return ((coord1.x - coord2.x) / (coord1.y - coord2.y));
 }
 
 //on click of the state button
