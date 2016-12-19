@@ -17,61 +17,31 @@ Basic structure of our state machine:
 function Graph() {
     this.states = [];
     this.arrows = [];
-    this.labels = [];
 }
 
 function State(coord, rad, text) {
     this.location = new Coordinate(coord.x, coord.y);
     this.radius = rad;
-    this.name = (text == undefined ? new Label("", this) : new Label(text, this));
+    this.type = "state";
 }
 
-function Arrow(coord1, coord2, text ) {
-    this.startState = undefined;
-    this.endState = undefined;
-
-    this.head = undefined;
-
-    this.startCoord = new Coordinate(coord1.x, coord1.y);
-    if (coord2 != undefined) this.endCoord = new Coordinate(coord2.x, coord2.y);
-    else this.endCoord = new Coordinate();
-
-    this.label = (text == undefined ? new Label("", this) : new Label(text, this));
-
+function Arrow(coord, text) {
+    this.startCoord = new Coordinate(coord.x, coord.y);
+    this.currentCoord = new Coordinate();
+    this.type = "arrow";
+    this.head = new ArrowHead(this.startCoord, this.currentCoord);
     this.complete = false;
+
+    graph.arrows.push(this);
 }
 
 function ArrowHead(coord1, coord2) {
-/*
-    INSTEAD OF DOING SINES AND JUNK:
-
-    start with the endpoint of the arrow (x + 5)
-    go backwards, match the point of x + 5 to the y +/y - 3
-    connect the a and b together since you know their coordinates
-
-     */
-
-    //delta y over delta x to calculate slope
-    var slope = (coord1.y - coord2.y) / (coord1.x  - coord2.x);
-
-    this.a = new Coordinate(coord2.x - TRIANGLE_BASE_X_CHANGE, coord2.y + TRIANGLE_BASE_LENGTH);
-    this.b = new Coordinate(coord2.x + TRIANGLE_BASE_X_CHANGE, coord2.y - TRIANGLE_BASE_LENGTH);
-    //set the head of the triangles 5 pixels further, accounting for slope
-    //
-    this.c = new Coordinate(coord2.x + TRIANGLE_CENTRAL_LENGTH, Math.round(coord2.y + (5 * slope)));
+    this.type = "arrowhead";
 }
 
 function Coordinate(ex, why) {
     this.x = ex;
     this.y = why;
-}
-
-function Label(text, obj, type, location) {
-    this.fontSize = TEXT_SIZE;
-    this.text = text;
-    this.associate = obj;
-    this.isState = (type == 'State');
-    this.location = location;
 }
 
 //CIRCLE_SIZE is a placeholder, the size should be customizable
@@ -90,11 +60,12 @@ const TRIANGLE_CENTRAL_LENGTH = 5; //5 units longer than the line segment
 
 //initialize our starting variables
 var graph = new Graph();
-var endArrow = false;
 var circles = false;
 var arrows = false;
 var start = false;
 var moveMode = false;
+var endArrow = false;
+var pointerToLastArrow = undefined;
 
 //make a canvas, do anti-aliasing
 function setup() {
@@ -117,17 +88,14 @@ function draw() {
         }
 
         for (var x = 0; x < graph.arrows.length; x++) {
-            var arrow = graph.arrows[i];
-            if (arrow.complete) {
-                line(arrow.startCoord.x, arrow.startCoord.y, arrow.endCoord.x, arrow.endCoord.y);
-                var ah = arrow.head;
-                triangle(ah.a.x, ah.a.y, ah.c.x, ah.c.y, ah.b.x, ah.b.y);
+            var arrow = graph.arrows[x];
+            if (!(arrow.complete)) {
+                line(arrow.startCoord.x, arrow.startCoord.y,
+                    mouseX, mouseY);
+            } else {
+                line(arrow.startCoord.x, arrow.startCoord.y,
+                    arrow.currentCoord.x, arrow.currentCoord.y);
             }
-        }
-
-        for (var y = 0; y < graph.labels.length; y++) {
-            var label = graph.labels[y];
-            text(label.text, label.location.x, label.location.y);
         }
     }
 }
@@ -146,31 +114,23 @@ function mousePressed() {
         //draw circles
         if (!endArrow && circles) {
             //did we click on an existing state?
-            var state = whichState(new Coordinate(mouseX, mouseY));
+            var state = whichState(new Coordinate(x, y));
             //no, create a new state
             if (state == -1) {
                 temp = new State(new Coordinate(x, y), CIRCLE_SIZE);
                 graph.states.push(temp);
-            } else {
-                //yes, rename the state
-                name(graph.states[state], 'State');
             }
         //first click for an arrow
         } else if (!endArrow && !circles) {
-            temp = new Arrow(new Coordinate(x, y));
-            graph.arrows.push(temp);
+            new Arrow(new Coordinate(x, y), "");
             endArrow = true;
         //second click of an arrow
         } else if (endArrow && !circles) {
-            //set the ending coordinates for the arrow
-            temp = graph.arrows[graph.arrows.length - 1];
-            temp.endCoord.x = x;
-            temp.endCoord.y = y;
-            //our arrow is done and printable
-            temp.complete = true;
-            temp.head = new ArrowHead(temp.startCoord, temp.endCoord);
-            //ready to start a new arrow
             endArrow = false;
+            pointerToLastArrow = graph.arrows[graph.arrows.length - 1];
+            pointerToLastArrow.currentCoord.x = x;
+            pointerToLastArrow.currentCoord.y = y;
+            pointerToLastArrow.complete = true;
         }
     } else if (moveMode) {
         //TODO
@@ -197,35 +157,15 @@ function whichState(coord) {
     return -1;
 }
 
-//Sets up our label
-function name(obj, type) {
-    //puts the text above the state but with a little bit of room
-    var temp;
-    if (type == 'State') {
-        //label with default text, a lebel for a state, and a defined location
-        //based on its associate object
-        temp = new Label("WORD", obj, 'State', new Coordinate(obj.location.x + obj.radius +
-                        obj.name.fontSize / 2 + FONT_BUFFER, obj.location.y));
-        obj.name = "WORD";
-    } else if (type == 'Arrow') {
-        //same condition but for an arrow
-        obj = graph.arrows[index];
-        obj.name = "WORD";
-    } else {
-        //I don't know how this would happen
-        alert("Somehow we passed this a bad name.");
-        return;
-    }
-
-    //push the new label
-    graph.labels.push(temp);
-}
-
 //on click of the state button
 function drawCircles() {
     circles = true;
     arrows = false;
-    start = true;
+    if (pointerToLastArrow.currentCoord.y <= 20) {
+        console.log(graph.arrows.length);
+        graph.arrows.pop();
+        console.log(graph.arrows.length);
+    }
 }
 
 //on click of the arrow button
