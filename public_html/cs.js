@@ -23,6 +23,7 @@ function State(coord, rad, text) {
     this.location = new Coordinate(coord.x, coord.y);
     this.radius = rad;
     this.type = "state";
+    this.edges = new Array(); //push arrows in here
 }
 
 function Arrow(coord, text) {
@@ -37,6 +38,7 @@ function Arrow(coord, text) {
 }
 
 function ArrowHead(coord1, coord2, arrow) {
+    //not currently working because I can't do geometry
     this.type = "arrowhead";
 
     var slope = arrow.slope;
@@ -58,11 +60,6 @@ const CIRCLE_SIZE = 120;
 const TEXT_SIZE = 14;
 const FONT_BUFFER = 5;
 const STATE_BUFFER = 15;
-const TRIANGLE_BASE_LENGTH = 3; //(5 * (Math.sin(Math.PI / 6))) / (Math.sin(Math.PI / 3))
-                                //but rounded up because pixels
-const TRIANGLE_BASE_X_CHANGE = 2;   //(3 * (Math.sin(Math.PI / 6))) / (Math.sin(Math.PI / 3))
-                                    //but rounded up because pixels
-const TRIANGLE_CENTRAL_LENGTH = 5; //5 units longer than the line segment
 
 //initialize our starting variables
 var graph = new Graph();
@@ -95,13 +92,16 @@ function draw() {
 
         for (var x = 0; x < graph.arrows.length; x++) {
             var arrow = graph.arrows[x];
+            //prints where the cursor currently is
             if (!(arrow.complete)) {
                 line(arrow.startCoord.x, arrow.startCoord.y,
                     mouseX, mouseY);
             } else {
+                //we've clicked twice, we can print our arrow
                 if (arrow.startCoord == arrow.currentCoord) {
                     //draw arrow back to itself
                 } else {
+                    //draw arrow somewhere else
                     line(arrow.startCoord.x, arrow.startCoord.y,
                         arrow.currentCoord.x, arrow.currentCoord.y);
                 }
@@ -137,6 +137,9 @@ function mousePressed() {
         //second click of an arrow
         } else if (endArrow && !circles) {
             endArrow = false;
+            //set up the pointer to our last arrow
+            //this makes printing them a little faster but may not be worth
+            //the extra complexity
             pointerToLastArrow = graph.arrows[graph.arrows.length - 1];
             pointerToLastArrow.currentCoord.x = x;
             pointerToLastArrow.currentCoord.y = y;
@@ -171,6 +174,7 @@ function whichState(coord) {
     return -1;
 }
 
+//possibly used for the arrowheads
 function slope(coord1, coord2) {
     return ((coord1.x - coord2.x) / (coord1.y - coord2.y));
 }
@@ -179,11 +183,11 @@ function slope(coord1, coord2) {
 function drawCircles() {
     circles = true;
     arrows = false;
-    if (pointerToLastArrow.currentCoord.y <= 20) {
-        console.log(graph.arrows.length);
-        graph.arrows.pop();
-        console.log(graph.arrows.length);
-    }
+    //this is for if the user started an arrow, but clicked on the 
+    //state button with the half-formed arrow
+    //also works for now as a clear, you can clear by clicking up near the 
+    //top of the screen
+    if (pointerToLastArrow.currentCoord.y <= 20) graph.arrows.pop();
 }
 
 //on click of the arrow button
