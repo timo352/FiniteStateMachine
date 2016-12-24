@@ -1,5 +1,4 @@
 //TODO: fix text output, figure out how to get user input
-//TODO: fix the arrows, it prints 1 on arrow mode, none when states have been made
 //TODO: arrow does weird stuff when you try to put in states nearby
 
 /*
@@ -90,11 +89,10 @@ const TRIANGLE_CENTRAL_LENGTH = 5; //5 units longer than the line segment
 
 //initialize our starting variables
 var graph = new Graph();
-var endArrow = false;
-var circles = false;
-var arrows = false;
-var start = false;
 var moveMode = false;
+
+var Placing = Object.freeze({NOTHING:0, CIRCLE:1, ARROW_START:2, ARROW_END:3});
+var placing = Placing.NOTHING;
 
 //make a canvas, do anti-aliasing
 function setup() {
@@ -110,25 +108,23 @@ function draw() {
 
     //if we've clicked on a button, we can start printing our states
     //and arrows and labels
-    if (start) {
-        for (var i = 0; i < graph.states.length; ++i) {
-            var state = graph.states[i];
-            ellipse(state.location.x, state.location.y, state.radius);
-        }
+    for (var i = 0; i < graph.states.length; ++i) {
+        var state = graph.states[i];
+        ellipse(state.location.x, state.location.y, state.radius);
+    }
 
-        for (var i = 0; i < graph.arrows.length; i++) {
-            var arrow = graph.arrows[i];
-            if (arrow.complete) {
-                line(arrow.startCoord.x, arrow.startCoord.y, arrow.endCoord.x, arrow.endCoord.y);
-                var ah = arrow.head;
-                triangle(ah.a.x, ah.a.y, ah.c.x, ah.c.y, ah.b.x, ah.b.y);
-            }
+    for (var i = 0; i < graph.arrows.length; i++) {
+        var arrow = graph.arrows[i];
+        if (arrow.complete) {
+            line(arrow.startCoord.x, arrow.startCoord.y, arrow.endCoord.x, arrow.endCoord.y);
+            var ah = arrow.head;
+            triangle(ah.a.x, ah.a.y, ah.c.x, ah.c.y, ah.b.x, ah.b.y);
         }
+    }
 
-        for (var i = 0; i < graph.labels.length; i++) {
-            var label = graph.labels[i];
-            text(label.text, label.location.x, label.location.y);
-        }
+    for (var i = 0; i < graph.labels.length; i++) {
+        var label = graph.labels[i];
+        text(label.text, label.location.x, label.location.y);
     }
 }
 
@@ -141,10 +137,11 @@ function mousePressed() {
     var y = mouseY;
     var temp;
 
-    //start means we've hit a button
-    if (start) {
-        //draw circles
-        if (!endArrow && circles) {
+    switch (placing) {
+        case Placing.NOTHING:
+            break;
+
+        case Placing.CIRCLE:
             //did we click on an existing state?
             var state = whichState(new Coordinate(mouseX, mouseY));
             //no, create a new state
@@ -155,13 +152,15 @@ function mousePressed() {
                 //yes, rename the state
                 name(graph.states[state], 'State');
             }
-        //first click for an arrow
-        } else if (!endArrow && !circles) {
+            break;
+
+        case Placing.ARROW_START:
             temp = new Arrow(new Coordinate(x, y));
             graph.arrows.push(temp);
-            endArrow = true;
-        //second click of an arrow
-        } else if (endArrow && !circles) {
+            placing = Placing.ARROW_END;
+            break;
+
+        case Placing.ARROW_END:
             //set the ending coordinates for the arrow
             temp = graph.arrows[graph.arrows.length - 1];
             temp.endCoord.x = x;
@@ -170,12 +169,9 @@ function mousePressed() {
             temp.complete = true;
             temp.head = new ArrowHead(temp.startCoord, temp.endCoord);
             //ready to start a new arrow
-            endArrow = false;
-        }
-    } else if (moveMode) {
-        //TODO
+            placing = Placing.ARROW_START;
+            break;
     }
-
 }
 
 //returns which state was clicked on
@@ -223,16 +219,12 @@ function name(obj, type) {
 
 //on click of the state button
 function drawCircles() {
-    circles = true;
-    arrows = false;
-    start = true;
+    placing = Placing.CIRCLE;
 }
 
 //on click of the arrow button
 function drawArrows() {
-    arrows = true;
-    circles = false;
-    start = true;
+    placing = Placing.ARROW_START;
 }
 
 //take this out if you want to, I was just using this
