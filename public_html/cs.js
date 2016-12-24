@@ -116,7 +116,7 @@ function draw() {
             ellipse(state.location.x, state.location.y, state.radius);
         }
 
-        for (var x = 0; x < graph.arrows.length; x++) {
+        for (var i = 0; i < graph.arrows.length; i++) {
             var arrow = graph.arrows[i];
             if (arrow.complete) {
                 line(arrow.startCoord.x, arrow.startCoord.y, arrow.endCoord.x, arrow.endCoord.y);
@@ -125,8 +125,8 @@ function draw() {
             }
         }
 
-        for (var y = 0; y < graph.labels.length; y++) {
-            var label = graph.labels[y];
+        for (var i = 0; i < graph.labels.length; i++) {
+            var label = graph.labels[i];
             text(label.text, label.location.x, label.location.y);
         }
     }
